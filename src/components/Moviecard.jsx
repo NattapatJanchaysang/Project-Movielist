@@ -1,3 +1,5 @@
+import "../css/Moviecard.css"
+
 function Moviecard({movie}) {
 
     function onfavoriteClick() {
