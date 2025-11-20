@@ -1,20 +1,47 @@
 import Moviecard from "../components/Moviecard";
-import { useState } from "react";
-import "../css/Home.css"
+import { useState, useEffect } from "react";
+import { searchmovies, getPopularmovies } from "../services/api";
+import "../css/Home.css";
 
 function Home() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [movies, setMovies] = useState([]);
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  const movies = [
-    { id: 1, title: "พี่มาก..พระโขนง", release_date: "2556" },
-    { id: 2, title: "สัปเหร่อ", release_date: "2566" },
-    { id: 3, title: "สุริโยไท", release_date: "2544" },
-    { id: 4, title: "นาคี 2", release_date: "2561" },
-  ];
+  useEffect(() => {
+    const loadpopularmovies = async () => {
+      try {
+        const popularmovies = await getPopularmovies();
+        setMovies(popularmovies);
+      } catch (err) {
+        console.log(err);
+        setError("Failed to load movies...");
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadpopularmovies();
+  }, []);
 
-  const handleSearh = () => {
+  const handleSearh = async (e) => {
     e.preventDefault();
-    alert(searchQuery);
+    if (!searchQuery.trim()) return
+    if (loading) return
+
+    setLoading(true)
+    try{
+        const searchResults = await searchmovies(searchQuery)
+        setMovies(searchResults)
+        setError(null)
+    } catch (err){
+        console.log(err)
+        setError("Failed to search movies...")
+    } finally {
+        setLoading(false)
+    }
+
+
     setSearchQuery("");
   };
 
@@ -33,14 +60,20 @@ function Home() {
         </button>
       </form>
 
-      <div className="movies-grid">
-        {movies.map(
-          (movie) =>
-            movie.title.startsWith(searchQuery) && (
-              <Moviecard movie={movie} key={movie.id} />
-            )
-        )}
-      </div>
+      {error && <div className="error-message">{error}</div>}
+
+      {loading ? (
+        <div className="loading">Loading...</div>
+      ) : (
+        <div className="movies-grid">
+          {movies.map(
+            (movie) =>
+              movie.title.toLowerCase().startsWith(searchQuery) && (
+                <Moviecard movie={movie} key={movie.id} />
+              )
+          )}
+        </div>
+      )}
     </div>
   );
 }
